@@ -1,0 +1,59 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<int> Input;
+RWStructuredBuffer<int> Result;
+RWStructuredBuffer<int> TimeAlive;
+
+// game utilities
+uint GameSize;
+
+// game rules
+int UP;
+int OP;
+int UB;
+int OB;
+
+
+[numthreads(10,10,10)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	int neighbours = 0;
+  int3 pos;
+  int position;
+
+	if (id.x < GameSize && id.y < GameSize && id.z < GameSize)
+	{
+		for (int i = -1; i <= 1; i++)
+		{
+			for (int j = -1; j <= 1; j++)
+			{
+				for (int k = -1; k <= 1; k++)
+				{
+          pos.x = (id.x + i + GameSize) % GameSize;
+          pos.y = (id.y + j + GameSize) % GameSize;
+          pos.z = (id.z + k + GameSize) % GameSize;
+
+          position = pos.x + pos.y*GameSize+ pos.z*GameSize*GameSize;
+
+          neighbours = neighbours + Input[position];
+				}
+			}
+		}
+
+    position = id.x + id.y*GameSize + id.z*GameSize*GameSize;
+
+    if (Input[position] > 0)
+    {
+      Result[position] = (neighbours <= OP && neighbours >= UP) ? 1:0;
+      TimeAlive[position] = TimeAlive[position] + 1;
+    }
+    else
+    {
+      Result[position] = (neighbours <= OB && neighbours >= UB) ? 1:0;
+      TimeAlive[position] = 1;
+    }
+	}
+}
